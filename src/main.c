@@ -102,7 +102,9 @@ const char *frag_shader_source =
     "in vec2 uv;\n"
     "out vec4 out_color;\n"
     "void main(void) {\n"
-    "    vec2 coord = (src_rect.xy + src_rect.zw*uv)/tex_size;\n"
+    "    vec2 src_size = abs(src_rect.zw);\n"
+    "    vec2 src_dir = sign(src_rect.zw);\n"
+    "    vec2 coord = (src_rect.xy + src_dir*(vec2(0.5) + (src_size - vec2(1.0))*uv))/tex_size;\n"
     "    out_color = texture(tex, coord)*color_mod;\n"
     "}\n";
 
@@ -305,24 +307,26 @@ void render_penger_at(GLint penger_tex_unit, int window_width, int window_height
 
     float progress  = step/(60.0*sps); // [0,1]
 
-    int frame_index = step%2;
+    int frame_index = step % PENGER_FRAME_COUNT;
+    int frame_width = (int) penger_width / PENGER_FRAME_COLS;
+    int frame_height = (int) penger_height / PENGER_FRAME_ROWS;
 
-    float penger_drawn_width = ((float)penger_width / 2) / PENGER_SCALE;
+    float penger_drawn_width = (float) frame_width / PENGER_SCALE;
 
     float penger_walk_width = window_width + penger_drawn_width;
 
     RGFW_rect src_rect = {
-        (int) (penger_width / 2) * frame_index,
-        0,
-        (int) penger_width / 2,
-        (int) penger_height
+        frame_width * (frame_index % PENGER_FRAME_COLS),
+        frame_height * (frame_index / PENGER_FRAME_COLS),
+        frame_width,
+        frame_height
     };
 
     RGFW_rect dst_rect = {
         floorf((float)penger_walk_width * progress - penger_drawn_width),
-        window_height - (penger_height / PENGER_SCALE),
-        (int) (penger_width / 2) / PENGER_SCALE,
-        (int) penger_height / PENGER_SCALE
+        window_height - (frame_height / PENGER_SCALE),
+        frame_width / PENGER_SCALE,
+        frame_height / PENGER_SCALE
     };
 
     if (flipped) {
