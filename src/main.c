@@ -192,6 +192,65 @@ GLint src_rect_uni;
 GLint tex_size_uni;
 GLint color_mod_uni;
 
+typedef struct {
+    int window_width;
+    int window_height;
+    int framebuffer_width;
+    int framebuffer_height;
+} RenderSize;
+
+int positive_or_one(int value)
+{
+    return value > 0 ? value : 1;
+}
+
+void get_render_size(RGFW_window *win, RenderSize *size)
+{
+    RGFW_window_getSize(win, &size->window_width, &size->window_height);
+    size->window_width = positive_or_one(size->window_width);
+    size->window_height = positive_or_one(size->window_height);
+
+    size->framebuffer_width = size->window_width;
+    size->framebuffer_height = size->window_height;
+
+#ifdef __APPLE__
+    if (win->src.view != NULL) {
+        NSRect bounds = ((NSRect (*)(id, SEL))abi_objc_msgSend_stret)(
+            (id)win->src.view,
+            sel_registerName("bounds"));
+        NSRect backing_bounds = ((NSRect (*)(id, SEL, NSRect))abi_objc_msgSend_stret)(
+            (id)win->src.view,
+            sel_registerName("convertRectToBacking:"),
+            bounds);
+
+        size->framebuffer_width = positive_or_one((int)ceil(backing_bounds.size.width));
+        size->framebuffer_height = positive_or_one((int)ceil(backing_bounds.size.height));
+    }
+#endif
+}
+
+int render_size_changed(RenderSize a, RenderSize b)
+{
+    return a.window_width != b.window_width
+        || a.window_height != b.window_height
+        || a.framebuffer_width != b.framebuffer_width
+        || a.framebuffer_height != b.framebuffer_height;
+}
+
+void apply_render_size(RGFW_window *win, RenderSize size)
+{
+#ifdef __APPLE__
+    if (win->src.ctx.native != NULL && win->src.ctx.native->ctx != NULL) {
+        objc_msgSend_void(win->src.ctx.native->ctx, sel_registerName("update"));
+    }
+#else
+    (void) win;
+#endif
+
+    glViewport(0, 0, size.framebuffer_width, size.framebuffer_height);
+    glUniform2f(scr_size_uni, size.window_width, size.window_height);
+}
+
 void set_texture_color_mod(GLfloat r, GLfloat g, GLfloat b)
 {
     glUniform4f(color_mod_uni, r, g, b, 1);
@@ -302,9 +361,12 @@ int main(int argc, char **argv)
     color_mod_uni = glGetUniformLocation(program, "color_mod");
 
     glUniform4f(dst_rect_uni, 0, 0, 500, 500);
-    glUniform2f(scr_size_uni, win_rect.w, win_rect.h);
     glUniform4f(src_rect_uni, 0, 0, CHAR_WIDTH, CHAR_HEIGHT);
     glUniform2f(tex_size_uni, digits_width, digits_height);
+
+    RenderSize render_size = {0};
+    get_render_size(win, &render_size);
+    apply_render_size(win, render_size);
 
     GLint digits_tex_unit = load_image_data_as_gl_texture(digits_data, digits_width, digits_height);
     #ifdef PENGER
@@ -332,10 +394,6 @@ int main(int argc, char **argv)
         RGFW_event event = {0};
         while (RGFW_window_checkEvent(win, &event)) {
             switch (event.type) {
-            case RGFW_windowResized: {
-                glViewport(0, 0, win->w, win->h);
-                glUniform2f(scr_size_uni, win->w, win->h);
-            } break;
             case RGFW_keyPressed: {
                 switch (event.key.value) {
                 case RGFW_space: {
@@ -397,6 +455,15 @@ int main(int argc, char **argv)
         }
         // INPUT END //////////////////////////////
 
+        {
+            RenderSize current_render_size = {0};
+            get_render_size(win, &current_render_size);
+            if (render_size_changed(render_size, current_render_size)) {
+                render_size = current_render_size;
+                apply_render_size(win, render_size);
+            }
+        }
+
         // RENDER BEGIN //////////////////////////////
         glClearColor(BACKGROUND_COLOR_R/255.0f, BACKGROUND_COLOR_G/255.0f, BACKGROUND_COLOR_B/255.0f, 1);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -406,7 +473,7 @@ int main(int argc, char **argv)
             // PENGER BEGIN //////////////////////////////
 
             #ifdef PENGER
-            render_penger_at(penger_tex_unit, win->w, win->h, state.displayed_time, state.mode==MODE_COUNTDOWN);
+            render_penger_at(penger_tex_unit, render_size.window_width, render_size.window_height, state.displayed_time, state.mode==MODE_COUNTDOWN);
             #endif
 
             // PENGER END //////////////////////////////
@@ -414,7 +481,7 @@ int main(int argc, char **argv)
             // DIGITS BEGIN //////////////////////////////
             int pen_x, pen_y;
             float fit_scale = 1.0;
-            initial_pen(win->w, win->h, &pen_x, &pen_y, state.user_scale, &fit_scale);
+            initial_pen(render_size.window_width, render_size.window_height, &pen_x, &pen_y, state.user_scale, &fit_scale);
 
             // TODO: support amount of hours >99
             const size_t hours = t / 60 / 60;
