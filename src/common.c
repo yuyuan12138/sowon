@@ -5,7 +5,7 @@
 #include <string.h>
 #include <time.h>
 
-#define FPS 60
+#define FPS 120
 #define COLON_INDEX 10
 #define SPRITE_CHAR_WIDTH (300 / 2)
 #define SPRITE_CHAR_HEIGHT (380 / 2)
@@ -25,7 +25,7 @@
 #define BACKGROUND_COLOR_R 24
 #define BACKGROUND_COLOR_G 24
 #define BACKGROUND_COLOR_B 24
-#define PENGER_STEPS_PER_SECOND 3
+#define PENGER_STEPS_PER_SECOND 5
 #define PENGER_SCALE 2
 #define PENGER_FRAME_COLS 4
 #define PENGER_FRAME_ROWS 2
