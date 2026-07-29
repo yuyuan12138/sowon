@@ -6,11 +6,11 @@
 .Nd Starting soon timer
 .Sh SYNOPSIS
 .Nm
-.Op Fl pe
+.Op Fl pet
 .Op Ar seconds | Ar clock
 .Sh DESCRIPTION
 .Nm
-is a graphical countdown/timer program.
+is a graphical or terminal countdown/timer program.
 With no arguments provided, it starts in ascending mode. With an amount of
 seconds provided, it starts in descending mode. Accepts human readable time
 intervals (1h23m54s). Clock starts it in clock mode, that displays
@@ -22,6 +22,8 @@ the current time.
 start in paused state
 .It Fl e
 exit the application when the countdown ends
+.It Fl t , Fl -tui
+start in terminal UI mode
 .Sh KEY BINDINGS
 .Bl -tag -width indent
 .It SPACE
@@ -36,6 +38,10 @@ Zoom 100%
 Restart
 .It F11
 Fullscreen
+.It R
+Restart in terminal UI
+.It Q
+Quit terminal UI
 .Sh FILES
 .Pa /usr/local/bin/sowon
 .br

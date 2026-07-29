@@ -1,10 +1,8 @@
-#include "digits.h"
-
-#ifdef PENGER
-#include "penger_walk_sheet.h"
-#endif
-
 #include <math.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #define FPS 60
@@ -37,6 +35,17 @@ typedef enum {
     MODE_COUNTDOWN,
     MODE_CLOCK,
 } Mode;
+
+int args_enable_tui(int argc, char **argv)
+{
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tui") == 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 float parse_time(const char *time)
 {
@@ -93,6 +102,8 @@ void parse_state_from_args(State *state, int argc, char **argv)
             state->paused = 1;
         } else if (strcmp(argv[i], "-e") == 0) {
             state->exit_after_countdown = 1;
+        } else if (strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--tui") == 0) {
+            /* UI selection is consumed by the entry point. */
         } else if (strcmp(argv[i], "clock") == 0) {
             state->mode = MODE_CLOCK;
         } else {
@@ -128,7 +139,7 @@ void state_update(State *state, float dt)
             } else {
                 state->displayed_time = 0.0f;
                 if (state->exit_after_countdown) {
-                    exit(0);
+                    state->quit = 1;
                 }
             }
         } break;
@@ -148,6 +159,26 @@ void state_update(State *state, float dt)
         } break;
         }
     }
+}
+
+void format_displayed_time(char *buffer, size_t buffer_size, float displayed_time)
+{
+    const size_t t = (size_t) floorf(fmaxf(displayed_time, 0.0f));
+    const size_t hours = t / 60 / 60;
+    const size_t minutes = t / 60 % 60;
+    const size_t seconds = t % 60;
+    snprintf(buffer, buffer_size, "%02zu:%02zu:%02zu", hours, minutes, seconds);
+}
+
+const char *mode_as_cstr(Mode mode)
+{
+    switch (mode) {
+    case MODE_ASCENDING: return "ascending";
+    case MODE_COUNTDOWN: return "countdown";
+    case MODE_CLOCK:     return "clock";
+    }
+
+    return "unknown";
 }
 
 void initial_pen(int w, int h, int *pen_x, int *pen_y, float user_scale, float *fit_scale)

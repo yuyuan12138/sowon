@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
@@ -68,6 +69,13 @@ u64 RGFW_getTimerValue(void) {
 #include "rglLoad.h"
 
 #include "common.c"
+#include "digits.h"
+
+#ifdef PENGER
+#include "penger_walk_sheet.h"
+#endif
+
+#include "tui.c"
 
 const char *vert_shader_source =
     "#version 330\n"
@@ -327,6 +335,10 @@ void render_penger_at(GLint penger_tex_unit, int window_width, int window_height
 
 int main(int argc, char **argv)
 {
+    if (args_enable_tui(argc, argv)) {
+        return run_tui(argc, argv);
+    }
+
     State state = {0};
 
     parse_state_from_args(&state, argc, argv);
@@ -385,7 +397,7 @@ int main(int argc, char **argv)
     glBindVertexArray(vao);
 
     uint64_t last_time = RGFW_getTimerValue();
-    while (RGFW_window_shouldClose(win) == RGFW_FALSE) {
+    while (RGFW_window_shouldClose(win) == RGFW_FALSE && !state.quit) {
         uint64_t now = RGFW_getTimerValue();
         float dt = (float)(now - last_time)/RGFW_getTimerFreq();
         last_time = now;
@@ -498,12 +510,15 @@ int main(int argc, char **argv)
             render_digit_at(digits_tex_unit, seconds / 10, (state.wiggle_index + 4) % WIGGLE_COUNT, &pen_x, &pen_y, state.user_scale, fit_scale);
             render_digit_at(digits_tex_unit, seconds % 10, (state.wiggle_index + 5) % WIGGLE_COUNT, &pen_x, &pen_y, state.user_scale, fit_scale);
 
+            char time_text[16];
+            format_displayed_time(time_text, sizeof(time_text), state.displayed_time);
+
             char title[TITLE_CAP];
-            snprintf(title, sizeof(title), "%02zu:%02zu:%02zu - sowon (RGFW)", hours, minutes, seconds);
+            snprintf(title, sizeof(title), "%s - sowon (RGFW)", time_text);
             if (strcmp(state.prev_title, title) != 0) {
                 RGFW_window_setName(win, title);
             }
-            memcpy(title, state.prev_title, TITLE_CAP);
+            memcpy(state.prev_title, title, TITLE_CAP);
             // DIGITS END //////////////////////////////
         }
 

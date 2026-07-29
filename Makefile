@@ -1,7 +1,8 @@
 UNAMEOS = $(shell uname)
 
-COMMON_CFLAGS=		-Wall -Wextra -ggdb -std=c99 -pedantic -Ithirdparty -Ibuild -DPENGER
-RGFW_CFLAGS=		$(COMMON_CFLAGS)
+COMMON_CFLAGS=		-Wall -Wextra -ggdb -std=c99 -pedantic -Ithirdparty -Ibuild
+RGFW_CFLAGS=		$(COMMON_CFLAGS) -DPENGER
+TUI_CFLAGS=			$(COMMON_CFLAGS)
 COMMON_LIBS=		-lm
 ifeq ($(UNAMEOS),Darwin)
 RGFW_LIBS=			$(COMMON_LIBS) -framework CoreVideo -framework Cocoa -framework OpenGL -framework IOKit
@@ -14,8 +15,14 @@ INSTALL?=		install
 .PHONY: all
 all: Makefile sowon man
 
-sowon: src/main.c build/digits.h build/penger_walk_sheet.h
+sowon: src/main.c src/common.c src/tui.c build/digits.h build/penger_walk_sheet.h
 	$(CC) $(RGFW_CFLAGS) -o sowon src/main.c $(RGFW_LIBS)
+
+.PHONY: tui
+tui: sowon-tui
+
+sowon-tui: src/tui_main.c src/common.c src/tui.c
+	$(CC) $(TUI_CFLAGS) -o sowon-tui src/tui_main.c $(COMMON_LIBS)
 
 build/digits.h: build/png2c ./assets/digits.png
 	./build/png2c ./assets/digits.png digits > build/digits.h
@@ -37,7 +44,7 @@ man: docs/sowon.6.gz
 
 .PHONY: clean
 clean:
-	rm -r sowon build docs/sowon.6.gz
+	rm -r sowon sowon-tui build docs/sowon.6.gz
 
 .PHONY: install
 install: all

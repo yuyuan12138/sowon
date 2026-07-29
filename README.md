@@ -29,6 +29,13 @@ $ make
 $ ./sowon
 ```
 
+### Terminal UI only
+
+```console
+$ make tui
+$ ./sowon-tui
+```
+
 ### Windows
 
 #### Visual Studio
@@ -47,11 +54,13 @@ $ ./sowon
 - Ascending mode: `./sowon`
 - Descending mode: `./sowon <seconds>`
 - Clock Mode: `./sowon clock`
+- Terminal UI: `./sowon --tui <mode>` or `./sowon-tui <mode>`
 
 ### Flags
 
 - Start in paused state: `./sowon -p <mode>`
 - Exit sowon after countdown finished: `./sowon -e`
+- Start in terminal UI mode: `./sowon -t` or `./sowon --tui`
 
 ### Key bindings
 
@@ -63,3 +72,5 @@ $ ./sowon
 | <kbd>0</kbd> | Zoom 100% |
 | <kbd>F5</kbd> | Restart |
 | <kbd>F11</kbd> | Fullscreen |
+
+Terminal UI also supports <kbd>R</kbd> to restart and <kbd>Q</kbd> to quit.
