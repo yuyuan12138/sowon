@@ -150,15 +150,15 @@ void state_update(State *state, float dt)
             float displayed_time_prev = state->displayed_time;
             time_t t = time(NULL);
             struct tm *tm = localtime(&t);
-            state->displayed_time = tm->tm_sec + tm->tm_min  * 60.0f + tm->tm_hour * 60.0f * 60.0f;
-            if (state->displayed_time <= displayed_time_prev) {
+            float displayed_time = tm->tm_sec + tm->tm_min  * 60.0f + tm->tm_hour * 60.0f * 60.0f;
+            if (floorf(displayed_time_prev) == displayed_time) {
                 // same second, keep previous count and add subsecond resolution for penger
-                if (floorf(displayed_time_prev) == floorf(displayed_time_prev+dt)) { // check for no newsecond shenaningans from dt
-                    state->displayed_time = displayed_time_prev + dt;
-                } else {
-                    state->displayed_time = displayed_time_prev;
+                float displayed_time_next = displayed_time_prev + dt;
+                if (floorf(displayed_time_next) == displayed_time) {
+                    displayed_time = displayed_time_next;
                 }
             }
+            state->displayed_time = displayed_time;
         } break;
         }
     }
